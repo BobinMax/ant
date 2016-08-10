@@ -28,8 +28,8 @@ class FSM {
     
     public function init() {
         
-        $this->matrixSize['y'] = 5;
-        $this->matrixSize['x'] = 5;
+        $this->matrixSize['y'] = 25;
+        $this->matrixSize['x'] = 25;
 
         for($y=0; $y<$this->matrixSize['y'];$y++)
         {
