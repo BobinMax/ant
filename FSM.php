@@ -7,7 +7,23 @@ class FSM {
     private $objPos = null;
     private $basePos = null;
     private $targetPos = null;
-    private $objNewPos = null;
+    private $possibleWay = null;
+    private $straightWay = null;
+    private $numOfNewWays = 0;
+    private $numOfAlreadyPassedWays = 0;
+    private $allreadyPassedWays = [];
+    private $notExploredWays = [];
+    
+    const allWays = [
+        'Up'        => 'goUp',
+        'UpRight'   => 'goUpRight', 
+        'Right'     => 'goRight',
+        'DownRight' => 'goDownRight',
+        'Down'      => 'goDown',
+        'DownLeft'  => 'goDownLeft',
+        'Left'      => 'goLeft',
+        'UpLeft'    => 'goUpLeft'
+        ];
 
     public function __construct() {
         $this->init();
@@ -49,8 +65,11 @@ class FSM {
     }
 
     public function showMatrix() {
-        
         passthru('tput reset');
+        var_dump([
+            'numOfNewWays' => $this->numOfNewWays,
+            'numOfAlreadyPassedWays' => $this->numOfAlreadyPassedWays
+        ]);
 
         foreach($this->matrix as $y)
         {
@@ -64,12 +83,12 @@ class FSM {
         return ['y' => mt_rand(0, $this->matrixSize['y']-1), 'x' => mt_rand(0, $this->matrixSize['x']-1)];
     }
 
-    public function tryPass($y, $x) {
-        return isset($this->matrix[$y][$x]);
+    public function tryPass($way) {
+        return isset($this->matrix[$way['y']][$way['x']]);
     }
 
-    public function alreadyPassedHere($y, $x) {
-        return $this->matrix[$y][$x] === '+';
+    public function alreadyPassedHere($way) {
+        return $this->matrix[$way['y']][$way['x']] === '+';
     }
 
     public function chooseRandWay($ways) {
@@ -79,77 +98,97 @@ class FSM {
         return $ways[mt_rand(0, count($ways) - 1)];
     }
 
+    public function goUp($pos) {
+        $pos['y'] -= 1;
+        $pos['way'] = 'Up';
+        return $pos;
+    }
+
+    public function goUpRight($pos) {
+        $pos['y'] = $pos['y'] - 1;
+        $pos['x'] = $pos['x'] + 1;
+        $pos['way'] = 'UpRight';
+        return $pos;
+    }
+
+    public function goUpLeft($pos) {
+        $pos['y'] = $pos['y'] - 1;
+        $pos['x'] = $pos['x'] - 1;
+        $pos['way'] = 'UpLeft';
+        return $pos;
+    }
+
+    public function goDown($pos) {
+        $pos['y'] += 1;
+        $pos['way'] = 'Down';
+        return $pos;
+    }
+
+    public function goDownRight($pos) {
+        $pos['y'] = $pos['y'] + 1;
+        $pos['x'] = $pos['x'] + 1;
+        $pos['way'] = 'DownRight';
+        return $pos;
+    }
+
+    public function goDownLeft($pos) {
+        $pos['y'] = $pos['y'] + 1;
+        $pos['x'] = $pos['x'] - 1;
+        $pos['way'] = 'DownLeft';
+        return $pos;
+    }
+
+    public function goLeft($pos) {
+        $pos['x'] -= 1;
+        $pos['way'] = 'Left';
+        return $pos;
+    }
+
+    public function goRight($pos) {
+        $pos['x'] += 1;
+        $pos['way'] = 'Right';
+        return $pos;
+    }
+
     public function start() {
         $this->setState('searchTarget');
     }
 
     public function deadEnd() {
+        global $startTime;
+        
+        passthru('tput reset');
+
+        var_dump([
+            'numOfNewWays' => $this->numOfNewWays,
+            'numOfAlreadyPassedWays' => $this->numOfAlreadyPassedWays
+        ]);
+
+        echo 'Game time : ' . (microtime(true) - $startTime) . PHP_EOL;
         echo 'GAME OVER!' . PHP_EOL;
         exit;
     }
 
     public function searchTarget() {
-        $allWays = 7;
-        $allreadyPassedWays = [];
-        $notExploredWays = [];
+        $this->allreadyPassedWays = [];
+        $this->notExploredWays = [];
 
-        for($i=0;$i<=$allWays;$i++)
+        foreach(self::allWays as $way => $wayMethod)
         {
-            $objNewPos['y'] = $this->objPos['y'];
-            $objNewPos['x'] = $this->objPos['x'];
-
-            switch($i)
-            {
-                case 0:
-                    $objNewPos['y'] = $this->objPos['y'] - 1;
-                    $objNewPos['x'] = $this->objPos['x'];
-                    break;
-
-                case 1:
-                    $objNewPos['y'] = $this->objPos['y'] - 1;
-                    $objNewPos['x'] = $this->objPos['x'] + 1;
-                    break;
-
-                case 2:
-                    $objNewPos['y'] = $this->objPos['y'];
-                    $objNewPos['x'] = $this->objPos['x'] + 1;
-                    break;
-
-                case 3:
-                    $objNewPos['y'] = $this->objPos['y'] + 1;
-                    $objNewPos['x'] = $this->objPos['x'] + 1;
-                    break;
-
-                case 4:
-                    $objNewPos['y'] = $this->objPos['y'] + 1;
-                    $objNewPos['x'] = $this->objPos['x'];
-                    break;
-
-                case 5:
-                    $objNewPos['y'] = $this->objPos['y'] + 1;
-                    $objNewPos['x'] = $this->objPos['x'] - 1;
-                    break;
-
-                case 6:
-                    $objNewPos['y'] = $this->objPos['y'];
-                    $objNewPos['x'] = $this->objPos['x'] - 1;
-                    break;
-
-                case 7:
-                    $objNewPos['y'] = $this->objPos['y'] - 1;
-                    $objNewPos['x'] = $this->objPos['x'] - 1;
-                    break;
-            }
+            $possibleWay['y'] = $this->objPos['y'];
+            $possibleWay['x'] = $this->objPos['x'];
+            
+            $possibleWay = $this->$wayMethod($this->objPos);
 
             // Try pass by current way
-            if($this->tryPass($objNewPos['y'], $objNewPos['x'])) {
+            if($this->tryPass($possibleWay)) {
                 // If already passed by this way...
-                if($this->alreadyPassedHere($objNewPos['y'], $objNewPos['x'])) {
-                    $allreadyPassedWays[] = $objNewPos;
+                if($this->alreadyPassedHere($possibleWay)) {
+                    $this->allreadyPassedWays[] = $possibleWay;
                 }
                 // If still not explored this way, try it
                 else {
-                    $notExploredWays [] = $objNewPos;
+                    $this->notExploredWays [] = $possibleWay;
                 }
             }
             // Maybe still remain another way? Continue searching...
@@ -158,49 +197,54 @@ class FSM {
             }
         }
 
-        // DEBUG
-        
-        // file_put_contents('debug.log',
-        //     json_encode(['allreadyPassedWays' => $allreadyPassedWays]) . PHP_EOL, 
-        //     FILE_APPEND);
-
-        // file_put_contents('debug.log',
-        //     json_encode(['notExploredWays' => $notExploredWays]) . PHP_EOL, 
-        //     FILE_APPEND);
-        
-        ///
-
-        if(count($notExploredWays))
+        if(count($this->notExploredWays))
         {
-            $this->objNewPos = $this->chooseRandWay($notExploredWays);
-            
-             // DEBUG //
+            $this->numOfNewWays++;
+            $this->objNewPos = $this->chooseRandWay($this->notExploredWays);
 
-        // file_put_contents('debug.log',
-        //     json_encode(['moveFrom' => $this->objPos]) . PHP_EOL, 
-        //     FILE_APPEND);
-
-        file_put_contents('debug.log',
-            json_encode(['moveTo' => $this->objNewPos]) . PHP_EOL, 
-            FILE_APPEND);
-        ///
-
+            $this->straightWay = null;
             $this->setState('move');
             return true;
         }
-        
-        if(count($allreadyPassedWays))
+
+        if($this->numOfNewWays == ($this->matrixSize['y'] * $this->matrixSize['x']) - 1) {
+            $this->setState('deadEnd');
+            return false;
+        }
+
+        if(count($this->allreadyPassedWays))
         {
-            $this->objNewPos = $this->chooseRandWay($allreadyPassedWays);
-            $this->setState('move');
+            $this->numOfAlreadyPassedWays++;
+            $this->setState('goByStraightWay');
             return true;
         }
         
         $this->setState('deadEnd');
         return false;
-
     }
     
+    public function goByStraightWay()
+    {
+        if(is_null($this->straightWay))
+            $this->straightWay = $this->chooseRandWay($this->allreadyPassedWays);
+
+        // Keep walking by this way
+        $wayMethod = self::allWays[$this->straightWay['way']];
+
+        $this->straightWay = $this->$wayMethod($this->straightWay);
+
+        if($this->tryPass($this->straightWay)) {
+            $this->objNewPos = $this->straightWay;
+            $this->setState('move');
+            return true;
+        }
+        else {
+            $this->straightWay = null;
+            $this->setState('searchTarget');
+            return false;
+        }
+    }
+
     public function move()
     {
         $this->matrix[($this->objPos['y'])][($this->objPos['x'])] = '+';
