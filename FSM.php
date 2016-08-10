@@ -9,7 +9,9 @@ class FSM {
     private $targetPos = null;
     private $possibleWay = null;
     private $straightWay = null;
-    private $numOfNewWays = 0;
+    private $straightWayNumStepsToGo = 0;
+    private $numOfExploredWays = 0;
+    private $numOfStraightWays = 0;
     private $numOfAlreadyPassedWays = 0;
     private $allreadyPassedWays = [];
     private $notExploredWays = [];
@@ -67,7 +69,7 @@ class FSM {
     public function showMatrix() {
         passthru('tput reset');
         var_dump([
-            'numOfNewWays' => $this->numOfNewWays,
+            'numOfExploredWays' => $this->numOfExploredWays,
             'numOfAlreadyPassedWays' => $this->numOfAlreadyPassedWays
         ]);
 
@@ -160,7 +162,7 @@ class FSM {
         passthru('tput reset');
 
         var_dump([
-            'numOfNewWays' => $this->numOfNewWays,
+            'numOfExploredWays' => $this->numOfExploredWays,
             'numOfAlreadyPassedWays' => $this->numOfAlreadyPassedWays
         ]);
 
@@ -199,7 +201,7 @@ class FSM {
 
         if(count($this->notExploredWays))
         {
-            $this->numOfNewWays++;
+            $this->numOfExploredWays++;
             $this->objNewPos = $this->chooseRandWay($this->notExploredWays);
 
             $this->straightWay = null;
@@ -207,7 +209,7 @@ class FSM {
             return true;
         }
 
-        if($this->numOfNewWays == ($this->matrixSize['y'] * $this->matrixSize['x']) - 1) {
+        if($this->numOfExploredWays == ($this->matrixSize['y'] * $this->matrixSize['x']) - 1) {
             $this->setState('deadEnd');
             return false;
         }
@@ -225,19 +227,29 @@ class FSM {
     
     public function goByStraightWay()
     {
+        // If now no straight way direction, choose it, 
+        // and also choose the number of steps you want to walk...
+
         if(is_null($this->straightWay))
+        {
             $this->straightWay = $this->chooseRandWay($this->allreadyPassedWays);
+            $randKey = array_rand($this->matrixSize);
+            $this->straightWayNumStepsToGo = mt_rand(1, $this->matrixSize[$randKey]);
+        }
 
         // Keep walking by this way
         $wayMethod = self::allWays[$this->straightWay['way']];
 
         $this->straightWay = $this->$wayMethod($this->straightWay);
 
-        if($this->tryPass($this->straightWay)) {
+        // If can pass by straight way, continue walking
+        if($this->tryPass($this->straightWay) && $this->straightWayNumStepsToGo > 0) {
+            $this->straightWayNumStepsToGo--;
             $this->objNewPos = $this->straightWay;
             $this->setState('move');
             return true;
         }
+        // If can not pass, go back to search way
         else {
             $this->straightWay = null;
             $this->setState('searchTarget');
