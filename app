@@ -1,14 +1,13 @@
 #!/usr/bin/php
 <?php
 
-	require_once('FSM.php');
+require_once('FSM.php');
 
-	$fsm = new FSM();
+$fsm = new FSM();
 
-	$startTime = microtime(true);
+$startTime = microtime(true);
 
-	while(true)
-	{
-		$fsm->loop();
-		usleep(5000);
-	}
+while (true) {
+    $fsm->loop();
+//    usleep(5000);
+}
