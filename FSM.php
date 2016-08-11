@@ -34,8 +34,8 @@ class FSM
 
     public function init()
     {
-        $this->matrixSize['y'] = 1000;
-        $this->matrixSize['x'] = 1000;
+        $this->matrixSize['y'] = 10;
+        $this->matrixSize['x'] = 20;
 
         for ($y = 0; $y < $this->matrixSize['y']; $y++) {
             for ($x = 0; $x < $this->matrixSize['x']; $x++) {
@@ -68,7 +68,7 @@ class FSM
     {
         $method = $this->activeState;
         $this->$method();
-//        $this->showMatrix();
+        $this->showMatrix();
     }
 
     public function showMatrix()
@@ -244,7 +244,10 @@ class FSM
         if (is_null($this->straightWay)) {
             $this->straightWay = $this->chooseRandWay($this->allreadyPassedWays);
             $randAxis = array_rand($this->matrixSize);
-            $this->straightWayNumStepsToGo = mt_rand(1, $this->matrixSize[$randAxis] / 2);
+
+            $minMoves = 5;
+            $maxMoves = ($this->matrixSize[$randAxis] / 2);
+            $this->straightWayNumStepsToGo = mt_rand($minMoves, $maxMoves < $minMoves ? $minMoves : $maxMoves);
         }
 
         // Keep walking by this way
