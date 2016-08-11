@@ -12,16 +12,25 @@ class FSM
         'Left' => 'goLeft',
         'UpLeft' => 'goUpLeft'
     ];
+
+    const filledObject = [
+        'Obstruction',
+        'Food'
+    ];
+
+    private $objectTypes = [];
+
     private $activeState = null;
     private $matrix = null;
-    private $matrixSize = null;
+    private $matrixSize = [
+        'y' => 25,
+        'x' => 50
+    ];
     private $objPos = null;
     private $objNewPos = null;
-    private $basePos = null;
-    private $targetPos = null;
     private $straightWay = null;
     private $straightWayNumStepsToGo = 0;
-    private $numOfEat = 0;
+    private $numOfMeals = 0;
     private $numOfMoves = 0;
     private $allreadyPassedWays = [];
     private $notExploredWays = [];
@@ -34,27 +43,50 @@ class FSM
 
     public function init()
     {
-        $this->matrixSize['y'] = 10;
-        $this->matrixSize['x'] = 20;
+        $this->objectTypes = [
+            'Object' => ['char' => '*'],
+            'AlreadyPassed' => ['char' => '.'],
+            'Empty' => ['char' => chr(32)],
+            'Obstruction' => ['char' => chr(176), 'chance' => 50],
+            'Food' => ['char' => '@', 'chance' => 50]
+        ];
 
+        // Fill the matrix
         for ($y = 0; $y < $this->matrixSize['y']; $y++) {
             for ($x = 0; $x < $this->matrixSize['x']; $x++) {
-                $this->matrix[$y][$x] = '0';
+                $fillObjKey = mt_rand(0, count(self::filledObject) - 1);
+                $fillObjName = self::filledObject[$fillObjKey];
+
+                if (isset($this->objectTypes[$fillObjName]['chance'])
+                    && $this->getChance($this->objectTypes[$fillObjName]['chance'])
+                ) {
+                    if (!isset($this->objectTypes[$fillObjName]['count'])) {
+                        $this->objectTypes[$fillObjName]['count'] = 0;
+                    }
+
+                    $this->objectTypes[$fillObjName]['count']++;
+                    $this->matrix[$y][$x] = $this->objectTypes[$fillObjName]['char'];
+                } else {
+                    $this->matrix[$y][$x] = $this->objectTypes['Empty']['char'];
+                }
             }
         }
-
+        // Set object position
         $this->objPos = $this->getRandPos();
-        $this->basePos = $this->getRandPos();
-        $this->targetPos = $this->getRandPos();
+        $this->matrix[($this->objPos['y'])][($this->objPos['x'])] = $this->objectTypes['Object']['char'];
+    }
 
-        $this->matrix[($this->objPos['y'])][($this->objPos['x'])] = '*';
-        // $this->matrix[($this->basePos['y'])][($this->basePos['x'])] = '%';
-        // $this->matrix[($this->targetPos['y'])][($this->targetPos['x'])] = '^';
+    function getChance($percent)
+    {
+        return mt_rand(0, 99) < $percent;
     }
 
     public function getRandPos()
     {
-        return ['y' => mt_rand(0, $this->matrixSize['y'] - 1), 'x' => mt_rand(0, $this->matrixSize['x'] - 1)];
+        return [
+            'y' => mt_rand(0, $this->matrixSize['y'] - 1),
+            'x' => mt_rand(0, $this->matrixSize['x'] - 1)
+        ];
     }
 
     public function setState($state)
@@ -64,27 +96,72 @@ class FSM
         }
     }
 
+    public function chooseRandKey()
+    {
+        return ['y' => mt_rand(0, $this->matrixSize['y'] - 1), 'x' => mt_rand(0, $this->matrixSize['x'] - 1)];
+    }
+
     public function loop()
     {
         $method = $this->activeState;
         $this->$method();
-        $this->showMatrix();
+        $this->drawMatrix();
     }
 
-    public function showMatrix()
+    public function drawMatrix()
     {
         passthru('tput reset');
 
         var_dump([
-            'numOfEat' => $this->numOfEat,
+            'numOfMeals' => $this->numOfMeals,
             'numOfMoves' => $this->numOfMoves,
-            'movesWithoutEat' => ($this->numOfMoves - $this->numOfEat)
+            'movesWithoutMeals' => ($this->numOfMoves - $this->numOfMeals)
         ]);
 
-        foreach ($this->matrix as $y) {
-            foreach ($y as $x)
-                echo $x;
+        $this->drawManyHorizontalLines($this->matrixSize['x'] + 2);
+
+        for ($y = 0; $y < $this->matrixSize['y']; $y++) {
+
             echo PHP_EOL;
+
+            for ($x = 0; $x < $this->matrixSize['x']; $x++) {
+
+                if ($x == 0 || $x == $this->matrixSize['x']) {
+                    $this->drawVerticalLine();
+                }
+
+                echo $this->matrix[$y][$x];
+            }
+
+            $this->drawVerticalLine();
+        }
+
+        echo PHP_EOL;
+        $this->drawManyHorizontalLines($this->matrixSize['x'] + 2);
+        echo PHP_EOL;
+    }
+
+    public function drawManyHorizontalLines($numberOfLines)
+    {
+        for ($i = 0; $i < $numberOfLines; $i++) {
+            $this->drawHorizontalLine();
+        }
+    }
+
+    public function drawHorizontalLine()
+    {
+        echo '-';
+    }
+
+    public function drawVerticalLine()
+    {
+        echo '|';
+    }
+
+    public function drawManyVerticalLines($numberOfLines)
+    {
+        for ($i = 0; $i < $numberOfLines; $i++) {
+            $this->drawVerticalLine();
         }
     }
 
@@ -160,9 +237,9 @@ class FSM
         passthru('tput reset');
 
         var_dump([
-            'numOfEat' => $this->numOfEat,
+            'numOfMeals' => $this->numOfMeals,
             'numOfMoves' => $this->numOfMoves,
-            'movesWithoutEat' => ($this->numOfMoves - $this->numOfEat)
+            'movesWithoutMeals' => ($this->numOfMoves - $this->numOfMeals)
         ]);
 
         echo 'Game time : ' . (microtime(true) - $startTime) . PHP_EOL;
@@ -204,7 +281,7 @@ class FSM
             return true;
         }
 
-        if ($this->numOfEat == ($this->matrixSize['y'] * $this->matrixSize['x']) - 1) {
+        if ($this->numOfMeals == $this->objectTypes['Food']['count']) {
             $this->setState('deadEnd');
             return false;
         }
@@ -220,12 +297,14 @@ class FSM
 
     public function tryPass($way)
     {
-        return isset($this->matrix[$way['y']][$way['x']]);
+        return
+            isset($this->matrix[$way['y']][$way['x']])
+            && ($this->matrix[$way['y']][$way['x']] !== $this->objectTypes['Obstruction']['char']);
     }
 
     public function alreadyPassedHere($way)
     {
-        return $this->matrix[$way['y']][$way['x']] === '+';
+        return $this->matrix[$way['y']][$way['x']] === $this->objectTypes['AlreadyPassed']['char'];
     }
 
     public function chooseRandWay($ways)
@@ -238,7 +317,7 @@ class FSM
 
     public function goByStraightWay()
     {
-        // If now no straight way direction, choose it, 
+        // If now no straight way direction, choose it,
         // and also choose the number of steps you want to walk...
 
         if (is_null($this->straightWay)) {
@@ -271,18 +350,18 @@ class FSM
 
     public function move()
     {
-        $this->matrix[($this->objPos['y'])][($this->objPos['x'])] = '+';
+        $this->matrix[($this->objPos['y'])][($this->objPos['x'])] = $this->objectTypes['AlreadyPassed']['char'];
 
-        // Eat
-        if ($this->matrix[($this->objNewPos['y'])][($this->objNewPos['x'])] === '0') {
-            $this->numOfEat++;
+        // Meal
+        if ($this->matrix[($this->objNewPos['y'])][($this->objNewPos['x'])] === $this->objectTypes['Food']['char']) {
+            $this->numOfMeals++;
         }
 
         $this->numOfMoves++;
 
         // Move to new position
         $this->objPos = $this->objNewPos;
-        $this->matrix[($this->objPos['y'])][($this->objPos['x'])] = '*';
+        $this->matrix[($this->objPos['y'])][($this->objPos['x'])] = $this->objectTypes['Object']['char'];
 
         // Continue searching...
         $this->setState('searchTarget');
