@@ -1,3 +1,4 @@
+
 <?php
 
 class FSM
@@ -23,11 +24,12 @@ class FSM
     private $activeState = null;
     private $matrix = null;
     private $matrixSize = [
-        'y' => 25,
+        'y' => 20,
         'x' => 50
     ];
     private $objPos = null;
     private $objNewPos = null;
+    private $objPrevPos = null;
     private $straightWay = null;
     private $straightWayNumStepsToGo = 0;
     private $numOfMeals = 0;
@@ -73,6 +75,7 @@ class FSM
         }
         // Set object position
         $this->objPos = $this->getRandPos();
+        $this->objPrevPos = $this->objPos;
         $this->matrix[($this->objPos['y'])][($this->objPos['x'])] = $this->objectTypes['Object']['char'];
     }
 
@@ -105,58 +108,6 @@ class FSM
     {
         $method = $this->activeState;
         $this->$method();
-        $this->drawMatrix();
-    }
-
-    public function drawMatrix()
-    {
-        passthru('tput reset');
-
-        $this->drawManyHorizontalLines($this->matrixSize['x'] + 2);
-
-        for ($y = 0; $y < $this->matrixSize['y']; $y++) {
-
-            echo PHP_EOL;
-
-            for ($x = 0; $x < $this->matrixSize['x']; $x++) {
-
-                if ($x == 0 || $x == $this->matrixSize['x']) {
-                    $this->drawVerticalLine();
-                }
-
-                echo $this->matrix[$y][$x];
-            }
-
-            $this->drawVerticalLine();
-        }
-
-        echo PHP_EOL;
-        $this->drawManyHorizontalLines($this->matrixSize['x'] + 2);
-        echo PHP_EOL;
-    }
-
-    public function drawManyHorizontalLines($numberOfLines)
-    {
-        for ($i = 0; $i < $numberOfLines; $i++) {
-            $this->drawHorizontalLine();
-        }
-    }
-
-    public function drawHorizontalLine()
-    {
-        echo '-';
-    }
-
-    public function drawVerticalLine()
-    {
-        echo '|';
-    }
-
-    public function drawManyVerticalLines($numberOfLines)
-    {
-        for ($i = 0; $i < $numberOfLines; $i++) {
-            $this->drawVerticalLine();
-        }
     }
 
     public function goUp($pos)
@@ -221,14 +172,67 @@ class FSM
 
     public function start()
     {
-        $this->setState('searchTarget');
+        $this->drawMatrix();
+       $this->setState('searchTarget');
+    }
+
+    public function drawMatrix()
+    {
+        passthru('tput reset');
+        passthru('tput civis');
+
+        $this->drawRect(
+            [
+                'y' => 0,
+                'x' => 0
+            ],
+            [
+                'y' => $this->matrixSize['y'] + 1,
+                'x' => $this->matrixSize['x'] + 1
+            ], '.', 3, 4);
+
+        passthru('tput cup 1 1');
+
+        for ($y = 0; $y < $this->matrixSize['y']; $y++) {
+            for ($x = 0; $x < $this->matrixSize['x']; $x++) {
+                echo $this->matrix[$y][$x];
+            }
+            passthru('tput cup ' . ($y + 2) . ' 1');
+        }
+    }
+
+    public function drawRect($p1, $p2, $char = '.', $fColor = 7, $bColor = 0)
+    {
+        passthru('tput setaf ' . $fColor);
+        passthru('tput setab ' . $bColor);
+
+        for ($i = 0; $i <= $p2['x']; $i++) {
+            passthru('tput cup 0 ' . $i);
+            echo $char;
+
+            passthru('tput cup ' . $p2['y'] . ' ' . $i);
+            echo $char;
+        }
+
+        for ($i = 0; $i <= $p2['y']; $i++) {
+            passthru('tput cup ' . $i . ' ' . $p1['x']);
+            echo $char;
+
+            passthru('tput cup ' . $i . ' ' . $p2['x']);
+            echo $char;
+        }
+
+        passthru('tput setaf ' . 7);
+        passthru('tput setab ' . 0);
+
+        passthru('tput cup 0 0');
     }
 
     public function deadEnd()
     {
         global $startTime;
 
-        passthru('tput reset');
+        $this->drawMatrix();
 
         var_dump([
             'numOfMeals' => $this->numOfMeals,
@@ -352,12 +356,28 @@ class FSM
 
         $this->numOfMoves++;
 
+        // Remember old position
+        $this->objPrevPos = $this->objPos;
+
         // Move to new position
+
         $this->objPos = $this->objNewPos;
         $this->matrix[($this->objPos['y'])][($this->objPos['x'])] = $this->objectTypes['Object']['char'];
+
+        // Redraw
+        $this->drawMove();
 
         // Continue searching...
         $this->setState('searchTarget');
         return true;
+    }
+
+    public function drawMove()
+    {
+        passthru('tput cup ' . ($this->objPrevPos['y'] + 1) . ' ' . ($this->objPrevPos['x'] + 1));
+        echo $this->matrix[$this->objPrevPos['y']][$this->objPrevPos['x']];
+
+        passthru('tput cup ' . ($this->objPos['y'] + 1) . ' ' . ($this->objPos['x'] + 1));
+        echo $this->matrix[$this->objPos['y']][$this->objPos['x']];
     }
 }
