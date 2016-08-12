@@ -112,12 +112,6 @@ class FSM
     {
         passthru('tput reset');
 
-        var_dump([
-            'numOfMeals' => $this->numOfMeals,
-            'numOfMoves' => $this->numOfMoves,
-            'movesWithoutMeals' => ($this->numOfMoves - $this->numOfMeals)
-        ]);
-
         $this->drawManyHorizontalLines($this->matrixSize['x'] + 2);
 
         for ($y = 0; $y < $this->matrixSize['y']; $y++) {
@@ -324,15 +318,14 @@ class FSM
             $this->straightWay = $this->chooseRandWay($this->allreadyPassedWays);
             $randAxis = array_rand($this->matrixSize);
 
-            $minMoves = 5;
+            $minMoves = 3;
             $maxMoves = ($this->matrixSize[$randAxis] / 2);
             $this->straightWayNumStepsToGo = mt_rand($minMoves, $maxMoves < $minMoves ? $minMoves : $maxMoves);
+        } else {
+            // Keep walking by this way
+            $wayMethod = self::allWays[$this->straightWay['way']];
+            $this->straightWay = $this->$wayMethod($this->straightWay);
         }
-
-        // Keep walking by this way
-        $wayMethod = self::allWays[$this->straightWay['way']];
-
-        $this->straightWay = $this->$wayMethod($this->straightWay);
 
         // If can pass by straight way, continue walking
         if ($this->tryPass($this->straightWay) && $this->straightWayNumStepsToGo > 0) {
