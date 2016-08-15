@@ -1,4 +1,3 @@
-
 <?php
 
 class FSM
@@ -24,8 +23,8 @@ class FSM
     private $activeState = null;
     private $matrix = null;
     private $matrixSize = [
-        'y' => 20,
-        'x' => 50
+        'y' => 10,
+        'x' => 20
     ];
     private $objPos = null;
     private $objNewPos = null;
@@ -46,11 +45,11 @@ class FSM
     public function init()
     {
         $this->objectTypes = [
-            'Object' => ['char' => '*'],
+            'Object' => ['char' => '●'],
             'AlreadyPassed' => ['char' => '.'],
             'Empty' => ['char' => chr(32)],
-            'Obstruction' => ['char' => chr(176), 'chance' => 50],
-            'Food' => ['char' => '@', 'chance' => 50]
+            'Obstruction' => ['char' => '░', 'chance' => 50],
+            'Food' => ['char' => '🍞', 'chance' => 50]
         ];
 
         // Fill the matrix
@@ -173,7 +172,7 @@ class FSM
     public function start()
     {
         $this->drawMatrix();
-       $this->setState('searchTarget');
+        $this->setState('searchTarget');
     }
 
     public function drawMatrix()
@@ -189,13 +188,23 @@ class FSM
             [
                 'y' => $this->matrixSize['y'] + 1,
                 'x' => $this->matrixSize['x'] + 1
-            ], '.', 3, 4);
+            ], ' ', 3, 4);
 
         passthru('tput cup 1 1');
 
         for ($y = 0; $y < $this->matrixSize['y']; $y++) {
             for ($x = 0; $x < $this->matrixSize['x']; $x++) {
+                switch ($this->matrix[$y][$x]) {
+                    case $this->objectTypes['Food']['char']:
+                        passthru('tput setaf ' . 3);
+                        break;
+                    case $this->objectTypes['Obstruction']['char']:
+                        passthru('tput setaf ' . 5);
+                        break;
+                }
+
                 echo $this->matrix[$y][$x];
+                passthru('tput setaf ' . 7);
             }
             passthru('tput cup ' . ($y + 2) . ' 1');
         }
@@ -374,10 +383,13 @@ class FSM
 
     public function drawMove()
     {
+        passthru('tput setaf ' . 2);
         passthru('tput cup ' . ($this->objPrevPos['y'] + 1) . ' ' . ($this->objPrevPos['x'] + 1));
         echo $this->matrix[$this->objPrevPos['y']][$this->objPrevPos['x']];
 
+        passthru('tput setaf ' . 2);
         passthru('tput cup ' . ($this->objPos['y'] + 1) . ' ' . ($this->objPos['x'] + 1));
         echo $this->matrix[$this->objPos['y']][$this->objPos['x']];
+        passthru('tput setaf ' . 7);
     }
 }
