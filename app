@@ -9,5 +9,5 @@ $startTime = microtime(true);
 
 while (true) {
     $fsm->loop();
-     usleep(5000);
+     usleep(1000);
 }

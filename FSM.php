@@ -23,8 +23,8 @@ class FSM
     private $activeState = null;
     private $matrix = null;
     private $matrixSize = [
-        'y' => 10,
-        'x' => 20
+        'y' => 25,
+        'x' => 75
     ];
     private $objPos = null;
     private $objNewPos = null;
@@ -45,11 +45,11 @@ class FSM
     public function init()
     {
         $this->objectTypes = [
-            'Object' => ['char' => '●'],
+            'Object' => ['char' => '👾'],
             'AlreadyPassed' => ['char' => '.'],
             'Empty' => ['char' => chr(32)],
-            'Obstruction' => ['char' => '░', 'chance' => 50],
-            'Food' => ['char' => '🍞', 'chance' => 50]
+            'Obstruction' => ['char' => '░', 'chance' => 5],
+            'Food' => ['char' => '🍞', 'chance' => 20]
         ];
 
         // Fill the matrix
@@ -331,8 +331,8 @@ class FSM
             $this->straightWay = $this->chooseRandWay($this->allreadyPassedWays);
             $randAxis = array_rand($this->matrixSize);
 
-            $minMoves = 3;
-            $maxMoves = ($this->matrixSize[$randAxis] / 2);
+            $minMoves = 5;
+            $maxMoves = ($this->matrixSize[$randAxis]);
             $this->straightWayNumStepsToGo = mt_rand($minMoves, $maxMoves < $minMoves ? $minMoves : $maxMoves);
         } else {
             // Keep walking by this way
